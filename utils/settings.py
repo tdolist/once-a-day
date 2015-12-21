@@ -1,7 +1,5 @@
-from .database import with_data
+from .data import *
 
 
-
-@with_data(mail)
 def mailsettings(settings):
     pass

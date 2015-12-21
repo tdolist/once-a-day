@@ -1,2 +1,2 @@
-from settings import *
-from database import *
+from .settings import *
+from .data import *
