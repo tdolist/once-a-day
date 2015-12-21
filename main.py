@@ -1,5 +1,9 @@
-import curses
+import os
 import sys
+import utils
+import curses
+import platform
+import subprocess
 
 
 def main(argv=sys.argv):
@@ -47,6 +51,10 @@ def main(argv=sys.argv):
                 curses.endwin()
     except Exception as e:
         curses.endwin()
+        windows = True if platform.system() == 'Windows' else False
+        clear = 'cls' if windows else 'clear'
+        subprocess.run(clear)
+        print('Once-a-day exited because of an Exception:\n   {}'.format(e))
 
 
 def get_param(prompt_string):
