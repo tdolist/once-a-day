@@ -1,6 +1,11 @@
 [package]
 name = "once-a-day"
 version = "0.1.0"
-authors = ["h4llow3En <mail@felixdoering.com>"]
+authors = ["Felix Wittwer <dev@felixwittwer.de>", "Felix Döring <development@felixdoering.com>"]
+description = "Make a compliment once a day and become a better person"
 
 [dependencies]
+lettre = "0.6.1"
+notify-rust = "3.3.0"
+chrono = "0.3.0"
+clap = {version = "2.23.2", features = ["yaml"]}

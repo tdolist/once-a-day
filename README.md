@@ -1,5 +1,7 @@
 # once-a-day
 
+[![Build Status](https://travis-ci.org/tdolist/once-a-day.svg?branch=master)](https://travis-ci.org/tdolist/once-a-day)
+
 You want to get randomly between a time you decide remembered, if you had made a compliment jet?
 
-__once\_a\_day__ sends you a mail (notification is planned) which reminds you to make one.
+**once_a_day** sends you a mail or notification which reminds you to make one.
