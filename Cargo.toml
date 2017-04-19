@@ -8,4 +8,5 @@ description = "Make a compliment once a day and become a better person"
 lettre = "0.6.1"
 notify-rust = "3.3.0"
 chrono = "0.3.0"
-clap = {version = "2.23.2", features = ["yaml"]}
+clap = { version = "2.23.2", features = ["yaml"] }
+colored = "1.4.1"

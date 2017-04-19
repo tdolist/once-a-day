@@ -1,30 +1,42 @@
-name: once a day
-about: Make a compliment once a day and become a better person
-author: Felix Wittwer <dev@felixwittwer.de>, Felix Döring <development@felixdoering.com>
+name:                        once a day
+about:                       Make a compliment once a day and become a better person
+author:                      Felix Wittwer <dev@felixwittwer.de>, Felix Döring <development@felixdoering.com>
 
 settings:
     - SubcommandRequiredElseHelp
 
 subcommands:
     - run:
-        about: Run with notifications localy
+        about:               Run with notifications localy
     - server:
-        about: Run as a server to send mails
+        about:               Run as a server to send mails
         args:
             - mail:
-                short: m
-                long: mail
-                required: true
-                help: Your mail address
+                short:       m
+                long:        mail
+                required:    true
+                help:        Your mail address
                 takes_value: true
             - host:
-                short: H
-                long: host
-                help: SMTP server
-                required: true
+                short:       H
+                long:        host
+                help:        SMTP server
+                required:    true
+                takes_value: true
+            - user:
+                short:       u
+                long:        user
+                help:        Username for host
+                required:    true
+                takes_value: true
+            - pass:
+                short:       P
+                long:        password
+                help:        Password for host
+                required:    true
                 takes_value: true
             - port:
-                short: p
-                long : port
-                help: SMTP port (default will be 587)
+                short:       p
+                long :       port
+                help:        SMTP port (default will be 587)
                 takes_value: true
