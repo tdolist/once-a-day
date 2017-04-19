@@ -2,13 +2,15 @@ language: rust
 os:
   - osx
   - linux
-before_install:
-  - sudo apt-get -qq update
-  - sudo apt-get install -y gcc pkg-config libdbus-1-dev openssl libssl-dev
+
 rust:
   - stable
   - beta
   - nightly
 matrix:
+  linux:
+      -before_install:
+        - sudo apt-get -qq update
+        - sudo apt-get install -y gcc pkg-config libdbus-1-dev openssl libssl-dev
   allow_failures:
     - rust: nightly
