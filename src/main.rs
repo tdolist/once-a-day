@@ -1,6 +1,7 @@
 
 #[macro_use]
 extern crate clap;
+extern crate regex;
 extern crate chrono;
 extern crate lettre;
 extern crate colored;
@@ -8,45 +9,97 @@ extern crate notify_rust;
 
 use clap::App;
 use colored::*;
+use regex::Regex;
 use chrono::prelude::*;
+// use chrono::offset::local;
+// use chrono::{datetime, date};
 use std::{thread, time};
 use notify_rust::Notification;
 use lettre::email::EmailBuilder;
 use lettre::transport::EmailTransport;
 use lettre::transport::smtp::{SecurityLevel, SmtpTransportBuilder};
 
-#[cfg(windows)]
 use std::process::exit;
 
-
-static ONE_DAY: u64 = 86400;
-
 fn main() {
+    let re = Regex::new(r"([01]?\d):(\d{2})").unwrap();
     let yml = load_yaml!("cli.yml");
     let app = App::from_yaml(yml)
         .version(crate_version!())
         .get_matches();
 
     match app.subcommand() {
-        ("run", Some(_)) => {
-            println!("{} Run with notifications", "[Notice]".yellow().bold());
-            execute(None);
+        ("run", Some(content)) => {
+            let time = content.value_of("time").unwrap();
+            if re.is_match(time) {
+                println!("{} Run with notifications", "[Notice]".yellow().bold());
+                let captures = re.captures(time).unwrap();
+                execute(None,
+                        captures.get(1).unwrap().as_str(),
+                        captures.get(2).unwrap().as_str());
+            } else {
+                exit(1);
+            }
         }
         ("server", Some(sub_m)) => {
-            println!("{} Run as server", "[Notice]".yellow().bold());
-            execute(Some(sub_m));
+            let time = sub_m.value_of("time").unwrap();
+            if re.is_match(time) {
+                println!("{} Run as server", "[Notice]".yellow().bold());
+                let captures = re.captures(time).unwrap();
+                execute(Some(sub_m),
+                        captures.get(0).unwrap().as_str(),
+                        captures.get(1).unwrap().as_str())
+            } else {
+                exit(1);
+            }
         }
         _ => println!("{}", app.usage()),
     }
 }
 
-fn execute(server_info: Option<&clap::ArgMatches>) {
+fn execute(server_info: Option<&clap::ArgMatches>, hour: &str, minute: &str) {
     let notification = match server_info {
         Some(_) => false,
         None => true,
     };
-    let sleep_duration = time::Duration::from_secs(ONE_DAY);
+    let mut trigger_time: DateTime<Local>;
+    let mut sleep_duration;
+    if Local::today()
+        .and_hms(hour.parse::<u32>().unwrap(),
+                 minute.parse::<u32>().unwrap(),
+                 0)
+        .timestamp() > Local::now().timestamp() {
+        sleep_duration = time::Duration::from_secs(((Local::today()
+            .and_hms(hour.parse::<u32>().unwrap(),
+                     minute.parse::<u32>().unwrap(),
+                     0)
+            .timestamp() -
+                                                     Local::now().timestamp()) as
+                                                    u64));
+        let now = Local::now();
+        println!("{} {}\tFirst notification will be delivered in {} seconds",
+                 "[Notice]".yellow().bold(),
+                 now.format("%Y/%m/%d %H:%M:%S").to_string(),
+                 sleep_duration.as_secs());
+        thread::sleep(sleep_duration);
+    }
     loop {
+        trigger_time = match Local::today().succ_opt() {
+            Some(date) => {
+                date.and_hms(hour.parse::<u32>().unwrap(),
+                             minute.parse::<u32>().unwrap(),
+                             0)
+            }
+            None => {
+                let now = Local::now();
+                println!("{} {}\tThere is no tomorrow",
+                         "[Error]".red().bold(),
+                         now.format("%Y/%m/%d %H:%M:%S").to_string());
+                exit(1);
+            }
+        };
+        let time_delta = trigger_time.timestamp() - Local::now().timestamp();
+        sleep_duration = time::Duration::from_secs((time_delta as u64));
         if notification {
             deliver_notifiaction();
         } else {
@@ -117,7 +170,7 @@ fn deliver_notifiaction() {
 
 
 #[cfg(windows)]
-fn deliver_notifiaction() {
+fn deliver_notifiaction(now: &date::Date) {
     let now = Local::now();
     println!("{} {}\tNo notification support for Windows right now.",
              "[Error]".red().bold(),

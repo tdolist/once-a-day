@@ -8,6 +8,13 @@ settings:
 subcommands:
     - run:
         about:               Run with notifications localy
+        args:
+            - time:
+                short:       t
+                long:        time
+                help:        Schedule time
+                required:    true
+                takes_value: true
     - server:
         about:               Run as a server to send mails
         args:
@@ -39,4 +46,10 @@ subcommands:
                 short:       p
                 long :       port
                 help:        SMTP port (default will be 587)
+                takes_value: true
+            - time:
+                short:       t
+                long:        time
+                help:        Schedule time
+                required:    true
                 takes_value: true
