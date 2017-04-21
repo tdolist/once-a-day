@@ -11,8 +11,6 @@ use clap::App;
 use colored::*;
 use regex::Regex;
 use chrono::prelude::*;
-// use chrono::offset::local;
-// use chrono::{datetime, date};
 use std::{thread, time};
 use notify_rust::Notification;
 use lettre::email::EmailBuilder;
@@ -24,10 +22,7 @@ use std::process::exit;
 fn main() {
     let re = Regex::new(r"([01]?\d):(\d{2})").unwrap();
     let yml = load_yaml!("cli.yml");
-    let app = App::from_yaml(yml)
-        .version(crate_version!())
-        .get_matches();
-
+    let app = App::from_yaml(yml).version(crate_version!()).get_matches();
     match app.subcommand() {
         ("run", Some(content)) => {
             let time = content.value_of("time").unwrap();
@@ -62,44 +57,18 @@ fn execute(server_info: Option<&clap::ArgMatches>, hour: &str, minute: &str) {
         Some(_) => false,
         None => true,
     };
-    let mut trigger_time: DateTime<Local>;
     let mut sleep_duration;
-    if Local::today()
-        .and_hms(hour.parse::<u32>().unwrap(),
-                 minute.parse::<u32>().unwrap(),
-                 0)
-        .timestamp() > Local::now().timestamp() {
-        sleep_duration = time::Duration::from_secs(((Local::today()
-            .and_hms(hour.parse::<u32>().unwrap(),
-                     minute.parse::<u32>().unwrap(),
-                     0)
-            .timestamp() -
-                                                     Local::now().timestamp()) as
-                                                    u64));
+    let delta = time_delta(hour, minute, true);
+    if delta.as_secs() > 0 {
         let now = Local::now();
         println!("{} {}\tFirst notification will be delivered in {} seconds",
                  "[Notice]".yellow().bold(),
                  now.format("%Y/%m/%d %H:%M:%S").to_string(),
-                 sleep_duration.as_secs());
-        thread::sleep(sleep_duration);
+                 delta.as_secs());
+        thread::sleep(delta);
     }
     loop {
-        trigger_time = match Local::today().succ_opt() {
-            Some(date) => {
-                date.and_hms(hour.parse::<u32>().unwrap(),
-                             minute.parse::<u32>().unwrap(),
-                             0)
-            }
-            None => {
-                let now = Local::now();
-                println!("{} {}\tThere is no tomorrow",
-                         "[Error]".red().bold(),
-                         now.format("%Y/%m/%d %H:%M:%S").to_string());
-                exit(1);
-            }
-        };
-        let time_delta = trigger_time.timestamp() - Local::now().timestamp();
-        sleep_duration = time::Duration::from_secs((time_delta as u64));
+        sleep_duration = time_delta(hour, minute, false);
         if notification {
             deliver_notifiaction();
         } else {
@@ -144,6 +113,28 @@ fn send_mail(args: &clap::ArgMatches) {
                      x)
         }
     }
+}
+
+fn time_delta(hour: &str, minute: &str, first: bool) -> time::Duration {
+    let trigger_base = if first {
+        Local::today()
+    } else {
+        match Local::today().succ_opt() {
+            Some(date) => date,
+            None => {
+                let now = Local::now();
+                println!("{} {}\tThere is no tomorrow",
+                         "[Error]".red().bold(),
+                         now.format("%Y/%m/%d %H:%M:%S").to_string());
+                exit(1);
+            }
+        }
+    };
+    let trigger_time = trigger_base.and_hms(hour.parse::<u32>().unwrap(),
+                                            minute.parse::<u32>().unwrap(),
+                                            0);
+    let time_delta = trigger_time.timestamp() - Local::now().timestamp();
+    time::Duration::from_secs(time_delta as u64)
 }
 
 #[cfg(all(unix))]
