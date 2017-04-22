@@ -42,8 +42,8 @@ fn main() {
                 println!("{} Run as server", "[Notice]".yellow().bold());
                 let captures = re.captures(time).unwrap();
                 execute(Some(sub_m),
-                        captures.get(0).unwrap().as_str(),
-                        captures.get(1).unwrap().as_str())
+                        captures.get(1).unwrap().as_str(),
+                        captures.get(2).unwrap().as_str())
             } else {
                 exit(1);
             }
