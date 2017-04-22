@@ -134,7 +134,11 @@ fn time_delta(hour: &str, minute: &str, first: bool) -> time::Duration {
                                             minute.parse::<u32>().unwrap(),
                                             0);
     let time_delta = trigger_time.timestamp() - Local::now().timestamp();
-    time::Duration::from_secs(time_delta as u64)
+    if time_delta <= 0 {
+        time::Duration::from_secs(0)
+    } else {
+        time::Duration::from_secs(time_delta as u64)
+    }
 }
 
 #[cfg(all(unix))]
