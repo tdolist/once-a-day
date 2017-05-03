@@ -7,7 +7,7 @@ extern crate lettre;
 extern crate colored;
 extern crate notify_rust;
 
-use clap::App;
+use clap::Shell;
 use colored::*;
 use regex::Regex;
 use chrono::prelude::*;
@@ -19,10 +19,11 @@ use lettre::transport::smtp::{SecurityLevel, SmtpTransportBuilder};
 
 use std::process::exit;
 
+mod cli;
+
 fn main() {
     let re = Regex::new(r"([01]?\d):(\d{2})").unwrap();
-    let yml = load_yaml!("cli.yml");
-    let app = App::from_yaml(yml).version(crate_version!()).get_matches();
+    let app = cli::cli().get_matches();
     match app.subcommand() {
         ("run", Some(content)) => {
             let time = content.value_of("time").unwrap();
@@ -48,6 +49,13 @@ fn main() {
                 exit(1);
             }
         }
+        ("completions", Some(sub_m)) => {
+                    if let Some(shell) = sub_m.value_of("shell") {
+                        cli::cli().gen_completions_to("oad",
+                                                      shell.parse::<Shell>().unwrap(),
+                                                      &mut std::io::stdout());
+                    }
+                }
         _ => println!("{}", app.usage()),
     }
 }

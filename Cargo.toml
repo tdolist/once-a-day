@@ -1,5 +1,5 @@
 [package]
-name = "once-a-day"
+name = "oad"
 version = "1.0.0"
 authors = ["Felix Wittwer <dev@felixwittwer.de>", "Felix Döring <development@felixdoering.com>"]
 description = "Make a compliment once a day and become a better person"
