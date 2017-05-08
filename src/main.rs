@@ -1,11 +1,14 @@
 
 #[macro_use]
 extern crate clap;
+#[macro_use]
+extern crate duct;
 extern crate regex;
 extern crate chrono;
 extern crate lettre;
 extern crate colored;
 extern crate notify_rust;
+extern crate process_path;
 
 use clap::Shell;
 use colored::*;
@@ -49,13 +52,14 @@ fn main() {
                 exit(1);
             }
         }
+        ("screen", Some(sub_m)) => tmux_interaction(sub_m),
         ("completions", Some(sub_m)) => {
-                    if let Some(shell) = sub_m.value_of("shell") {
-                        cli::cli().gen_completions_to("oad",
-                                                      shell.parse::<Shell>().unwrap(),
-                                                      &mut std::io::stdout());
-                    }
-                }
+            if let Some(shell) = sub_m.value_of("shell") {
+                cli::cli().gen_completions_to("oad",
+                                              shell.parse::<Shell>().unwrap(),
+                                              &mut std::io::stdout());
+            }
+        }
         _ => println!("{}", app.usage()),
     }
 }
@@ -99,10 +103,18 @@ fn send_mail(args: &clap::ArgMatches) {
         Some(x) => x.parse::<u16>().unwrap(),
         None => 587 as u16,
     };
-    let mut sender = SmtpTransportBuilder::new((args.value_of("host").unwrap(), port))
-        .unwrap()
-        .credentials(args.value_of("user").unwrap(),
-                     args.value_of("pass").unwrap())
+    let tmp_sender = match SmtpTransportBuilder::new((args.value_of("host").unwrap(), port)) {
+        Ok(sender) => sender,
+        Err(x) => {
+            println!("{} {}\t{}",
+                     "[Error]".red().bold(),
+                     now.format("%Y/%m/%d %H:%M:%S").to_string(),
+                     x);
+            return;
+        }
+    };
+    let mut sender = tmp_sender.credentials(args.value_of("user").unwrap(),
+                     args.value_of("password").unwrap())
         .security_level(SecurityLevel::AlwaysEncrypt)
         .smtp_utf8(true)
         .connection_reuse(true)
@@ -179,4 +191,54 @@ fn deliver_notifiaction(now: &date::Date) {
              "[Error]".red().bold(),
              now.format("%Y/%m/%d %H:%M:%S").to_string());
     exit(1);
+}
+
+
+#[allow(deprecated)]
+fn tmux_interaction(commands: &clap::ArgMatches) {
+    let executable = process_path::get_executable_path().unwrap().to_str().unwrap().to_string();
+    match commands.subcommand() {
+        ("run", Some(sub_m)) => {
+            cmd!("screen",
+                 "-dmS",
+                 "once-a-day",
+                 executable,
+                 "run",
+                 sub_m.value_of("time").unwrap())
+                .run()
+                .unwrap();
+        }
+        ("server", Some(sub_m)) => {
+            cmd!("screen",
+                 "-dmS",
+                 "once-a-day",
+                 executable,
+                 "server",
+                 sub_m.value_of("mail").unwrap(),
+                 sub_m.value_of("host").unwrap(),
+                 sub_m.value_of("user").unwrap(),
+                 sub_m.value_of("password").unwrap(),
+                 sub_m.value_of("time").unwrap(),
+                 sub_m.value_of("port").unwrap_or("587"))
+                .run()
+                .unwrap();
+        }
+        ("status", _) => {
+            // I have to use this as depricated marked function because
+            // `screen -ls` always returns with errorcode 1 and screws up
+            // the returncode check of the grep command 
+            match duct::sh("screen -ls | grep -q \"once-a-day\"").run() {
+                Ok(_) => println!("Status of Once-a-day: {}", "running".green().bold()),
+                Err(_) => println!("Status of Once-a-day: {}", "not running".red().bold()),
+            };
+
+        }
+        ("stop", _) => {
+            match cmd!("screen", "-X", "-S", "once-a-day", "quit").stdout_null().run() {
+                Ok(_) => println!("Once-a-day was stopped"),
+                Err(_) => println!("Once-a-day was not running"),
+            }
+        }
+        _ => println!("{}", commands.usage()),
+    }
 }
