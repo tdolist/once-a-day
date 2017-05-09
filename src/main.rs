@@ -194,7 +194,6 @@ fn deliver_notifiaction(now: &date::Date) {
 }
 
 
-#[allow(deprecated)]
 fn tmux_interaction(commands: &clap::ArgMatches) {
     let executable = process_path::get_executable_path().unwrap().to_str().unwrap().to_string();
     match commands.subcommand() {
@@ -224,10 +223,7 @@ fn tmux_interaction(commands: &clap::ArgMatches) {
                 .unwrap();
         }
         ("status", _) => {
-            // I have to use this as depricated marked function because
-            // `screen -ls` always returns with errorcode 1 and screws up
-            // the returncode check of the grep command 
-            match duct::sh("screen -ls | grep -q \"once-a-day\"").run() {
+            match cmd!("screen", "-ls").unchecked().pipe(cmd!("grep", "-q", "once-a-day")).run() {
                 Ok(_) => println!("Status of Once-a-day: {}", "running".green().bold()),
                 Err(_) => println!("Status of Once-a-day: {}", "not running".red().bold()),
             };
